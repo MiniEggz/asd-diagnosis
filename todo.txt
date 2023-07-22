@@ -1,0 +1,14 @@
+Clear up:
+ - Classifiers
+  - Remove unnecessary code
+  - Make more shared code between Remurs and ElasticRemurs
+  - Trial different implementations of classifieres
+
+ - Remove unnecessary code and speed up Remurs
+  - Make all more clear and concise
+  - Document properly
+
+Improve:
+ - Add phenotypic data
+ - Add certainty estimate and include in prediction
+  - Is more certain better? => what are the implications?
