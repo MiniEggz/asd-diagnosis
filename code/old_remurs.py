@@ -64,14 +64,6 @@ def prox_l1(v, lambda_):
     return np.maximum(0, v - lambda_) - np.maximum(0, -v - lambda_)
 
 
-def prox_l2(v, lambda_):
-    """The proximal operator of the l2 norm.
-
-    prox_l2(v, lambda_) is the proximal operator of the l1 norm with parameter lambda_
-    """
-    return v / (1 + 2 * lambda_)
-
-
 def prox_nuclear(v, lambda_):
     """Evaluates the proximal operator of the nuclear norm at v
     (i.e., the singular value thresholding operator).
@@ -195,13 +187,12 @@ def _preprocess_data(
     return X, y, X_offset, y_offset, X_scale
 
 
-class _BaseElasticRemurs(LinearModel, metaclass=ABCMeta):
+class _BaseRemurs(LinearModel, metaclass=ABCMeta):
     @abstractmethod
     def __init__(
         self,
         alpha=1.0,
         beta=1.0,
-        gamma=1.0,
         *,
         fit_intercept=True,
         copy_X=True,
@@ -211,7 +202,6 @@ class _BaseElasticRemurs(LinearModel, metaclass=ABCMeta):
     ):
         self.alpha = alpha
         self.beta = beta
-        self.gamma = gamma
         self.fit_intercept = fit_intercept
         self.copy_X = copy_X
         self.max_iter = max_iter
@@ -229,12 +219,11 @@ class _BaseElasticRemurs(LinearModel, metaclass=ABCMeta):
             sample_weight=sample_weight,
         )
 
-        self.coef_ = _elastic_remurs_regression(
+        self.coef_ = _remurs_regression(
             X,
             y,
             alpha=self.alpha,
             beta=self.beta,
-            gamma=self.gamma,
             epsilon=self.tol,
             max_iter=self.max_iter,
         )
@@ -409,12 +398,11 @@ class _RemursClassifierMixin(LinearClassifierMixin):
         return {"multilabel": True}
 
 
-class ElasticRemursClassifier(_RemursClassifierMixin, _BaseElasticRemurs):
+class RemursClassifier(_RemursClassifierMixin, _BaseRemurs):
     def __init__(
         self,
         alpha=1.0,
         beta=1.0,
-        gamma=1.0,
         *,
         fit_intercept=True,
         copy_X=True,
@@ -426,7 +414,6 @@ class ElasticRemursClassifier(_RemursClassifierMixin, _BaseElasticRemurs):
         super().__init__(
             alpha=alpha,
             beta=beta,
-            gamma=gamma,
             fit_intercept=fit_intercept,
             copy_X=copy_X,
             max_iter=max_iter,
@@ -442,12 +429,11 @@ class ElasticRemursClassifier(_RemursClassifierMixin, _BaseElasticRemurs):
         return self
 
 
-def _elastic_remurs_regression(
+def _remurs_regression(
     tX: np.ndarray,
     y: np.ndarray,
     alpha: float,
     beta: float,
-    gamma: float,
     epsilon: float = 1e-4,
     max_iter: int = 1000,
 ):
@@ -516,9 +502,7 @@ def _elastic_remurs_regression(
             tSum_uv += tV[n]
             tSum_ab += tB[n]
 
-        tW = prox_l1((tSum_uv + tSum_ab) / (N + 1), beta / (N + 1) / rho) + prox_l2(
-            (tSum_uv + tSum_ab) / (N + 1), gamma / (N + 1) / rho
-        )
+        tW = prox_l1((tSum_uv + tSum_ab) / (N + 1), beta / (N + 1) / rho)
 
         # update tA
         tA = tA + tU - tW

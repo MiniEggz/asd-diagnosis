@@ -9,12 +9,10 @@ from nilearn.connectome import ConnectivityMeasure
 from nilearn.datasets import fetch_abide_pcp
 from sklearn.metrics import accuracy_score
 from sklearn.preprocessing import OneHotEncoder
-from remurs import _remurs_regression
-import numbers
-
-from utils import Best
 
 from config import get_cfg_defaults
+from results_handling import Best
+from datetime import datetime
 
 # config
 # cfg_path = "configs/tutorial.yaml"  # Path to `.yaml` config file
@@ -38,7 +36,7 @@ abide = fetch_abide_pcp(
     band_pass_filtering=True,
     global_signal_regression=False,
     derivatives=atlas,
-    #SITE_ID=site_ids,
+    SITE_ID=site_ids,
     quality_checked=False,
     verbose=0,
 )
@@ -73,14 +71,19 @@ if cfg.MODEL.CONNECTIVITY == "tp":
     time_series = conn_measure.fit_transform(time_series)
     conn_measure = ConnectivityMeasure(kind="tangent", vectorize=cfg.MODEL.VECTORIZE)
 elif cfg.MODEL.CONNECTIVITY == "correlation":
-    conn_measure = ConnectivityMeasure(kind="correlation", vectorize=cfg.MODEL.VECTORIZE)
+    conn_measure = ConnectivityMeasure(
+        kind="correlation", vectorize=cfg.MODEL.VECTORIZE
+    )
 else:
-    raise ValueError("Connectivity measure config option invalid. Please use 'correlation' or 'tp'.")
+    raise ValueError(
+        "Connectivity measure config option invalid. Please use 'correlation' or 'tp'."
+    )
 # correlation_measure = ConnectivityMeasure(kind="correlation", vectorize=cfg.MODEL.VECTORIZE)
 brain_networks = conn_measure.fit_transform(time_series)
 
 print(f"Number of samples: {brain_networks.shape[0]}")
 print(f"Shape of brain networks: {brain_networks.shape}")
+
 
 # cross validation pipeline for multi-site data
 def cross_validation(x, y, covariates, estimator, domain_adaptation=False):
@@ -106,7 +109,7 @@ def cross_validation(x, y, covariates, estimator, domain_adaptation=False):
             )
         else:
             estimator.fit(x_src, y_src)
-        
+
         y_pred = estimator.predict(x_tgt)
         results["Accuracy"].append(accuracy_score(y_tgt, y_pred))
         results["Target"].append(tgt)
@@ -120,9 +123,9 @@ def cross_validation(x, y, covariates, estimator, domain_adaptation=False):
     )
     mean_acc /= x.shape[0]
 
-    # calculate squared differences
+    # calculate squared differences for std
     squared_diffs = [
-        results["Num_samples"][i] * (results["Accuracy"][i] - mean_acc)**2
+        results["Num_samples"][i] * (results["Accuracy"][i] - mean_acc) ** 2
         for i in range(n_covariates)
     ]
 
@@ -138,8 +141,8 @@ def cross_validation(x, y, covariates, estimator, domain_adaptation=False):
     results["Num_samples"].append(x.shape[0])
     results["Accuracy"].append(std)
 
-
     return pd.DataFrame(results)
+
 
 # cross validation pipeline for multi-site data
 def k_fold_cross_validation(x, y, covariates, estimator, k=10):
@@ -155,9 +158,7 @@ def k_fold_cross_validation(x, y, covariates, estimator, k=10):
         end_idx_test = (test_fold + 1) * num_test
         if test_fold == k - 1:
             end_idx_test = num_samples
-        idx_test = idx_total[
-            start_idx_test : end_idx_test
-        ]
+        idx_test = idx_total[start_idx_test:end_idx_test]
         idx_train = np.setdiff1d(idx_total, idx_test)
         x_test = brain_networks[idx_test]
         x_train = brain_networks[idx_train]
@@ -165,25 +166,22 @@ def k_fold_cross_validation(x, y, covariates, estimator, k=10):
         y_train = y[idx_train]
 
         estimator.fit(x_train, y_train)
-        
+
         y_pred = estimator.predict(x_test)
         results["Accuracy"].append(accuracy_score(y_test, y_pred))
         results["Fold"].append(test_fold)
         results["Num_samples"].append(x_test.shape[0])
-    
+
     # TODO: handle if the folds don't match... do a final fold with remaining, or validate number of folds
 
     mean_acc = sum(
-        [
-            results["Num_samples"][i] * results["Accuracy"][i]
-            for i in range(k)
-        ]
+        [results["Num_samples"][i] * results["Accuracy"][i] for i in range(k)]
     )
     mean_acc /= x.shape[0]
 
     # calculate squared differences
     squared_diffs = [
-        results["Num_samples"][i] * (results["Accuracy"][i] - mean_acc)**2
+        results["Num_samples"][i] * (results["Accuracy"][i] - mean_acc) ** 2
         for i in range(k)
     ]
 
@@ -194,7 +192,7 @@ def k_fold_cross_validation(x, y, covariates, estimator, k=10):
     results["Fold"].append("Average")
     results["Num_samples"].append(x.shape[0])
     results["Accuracy"].append(mean_acc)
-    
+
     # add std
     results["Fold"].append("Std")
     results["Num_samples"].append(x.shape[0])
@@ -202,14 +200,13 @@ def k_fold_cross_validation(x, y, covariates, estimator, k=10):
 
     return pd.DataFrame(results)
 
+
 # baseline with ridge classifier
-from sklearn.linear_model import RidgeClassifier
-from sklearn.linear_model import LogisticRegression
+from sklearn.linear_model import LogisticRegression, RidgeClassifier
 from sklearn.svm import SVC
-from remurs import RemursClassifier
+
 from elastic_remurs import ElasticRemursClassifier
-from cremurs import CremursClassifier
-from elastic_net import ElasticNetClassifier
+from remurs import RemursClassifier
 
 print("Running cross-validation...")
 start_time = time.time()
@@ -230,6 +227,8 @@ best = Best()
 # set up results dataframe
 results_dict = {"alpha": [], "beta": [], "gamma": [], "avg_score": []}
 
+
+# can be pulled out into separate function -- to set alpha, beta, gamma
 NO_BETA = ["ridge", "logistic_l1", "logistic_l2", "mpca"]
 GAMMA_NEEDED = ["elastic_remurs"]
 
@@ -244,52 +243,76 @@ if estimator_name not in GAMMA_NEEDED:
 if estimator_name == "mpca":
     alpha_range = [""]
 
+
+# running the experiment can also be pulled out into a separate function
 for alpha_val in alpha_range:
-
     for beta_val in beta_range:
-
         for gamma_val in gamma_range:
-
             print(f"Alpha: {alpha_val}, Beta: {beta_val}, Gamma: {gamma_val}")
 
             if estimator_name == "remurs":
-                estimator = RemursClassifier(alpha=alpha_val, beta=beta_val)
+                estimator = RemursClassifier(
+                    alpha=alpha_val, beta=beta_val, fit_intercept=True
+                )
             elif estimator_name == "elastic_remurs":
-                estimator = ElasticRemursClassifier(alpha=alpha_val, beta=beta_val, gamma=gamma_val)
+                estimator = ElasticRemursClassifier(
+                    alpha=alpha_val, beta=beta_val, gamma=gamma_val
+                )
             elif estimator_name == "ridge":
                 estimator = RidgeClassifier(alpha=alpha_val)
             elif estimator_name == "svm":
                 estimator = SVC(C=alpha_val, gamma=beta_val)
             elif estimator_name == "logistic_l1":
-                estimator = LogisticRegression(penalty="l1", C=alpha_val, solver="liblinear", max_iter=1000)
+                estimator = LogisticRegression(
+                    penalty="l1", C=alpha_val, solver="liblinear", max_iter=1000
+                )
             elif estimator_name == "logistic_l2":
-                estimator = LogisticRegression(penalty="l2", C=alpha_val, solver="liblinear", max_iter=1000)
+                estimator = LogisticRegression(
+                    penalty="l2", C=alpha_val, solver="liblinear", max_iter=1000
+                )
             elif estimator_name == "logistic_elastic":
-                estimator = LogisticRegression(penalty="elasticnet", C=alpha_val, l1_ratio=beta_val, solver="saga", max_iter=1000)
-            elif estimator_name == "elastic_net":
-                estimator = ElasticNetClassifier(alpha=alpha_val, l1_ratio=beta_val)
-            elif estimator_name == "cremurs":
-                estimator = CremursClassifier(alpha=alpha_val, beta=beta_val)
+                estimator = LogisticRegression(
+                    penalty="elasticnet",
+                    C=alpha_val,
+                    l1_ratio=beta_val,
+                    solver="saga",
+                    max_iter=1000,
+                )
             # estimator = Lasso(alpha=alpha_val)
             # estimator = LogisticRegression(penalty="l2", C=alpha_val, solver="saga", max_iter=1000)
+
+            # can make validation method more abstract
             if test_method == "k_folds":
                 res_df = k_fold_cross_validation(
-                    brain_networks, pheno["DX_GROUP"].values, pheno["SITE_ID"].values, estimator
+                    brain_networks,
+                    pheno["DX_GROUP"].values,
+                    pheno["SITE_ID"].values,
+                    estimator,
                 )
             elif test_method == "loo":
                 res_df = cross_validation(
-                    brain_networks, pheno["DX_GROUP"].values, pheno["SITE_ID"].values, estimator
+                    brain_networks,
+                    pheno["DX_GROUP"].values,
+                    pheno["SITE_ID"].values,
+                    estimator,
                 )
 
+            # displaying can be separate function
             print("Displaying findings...")
             print(f"Alpha: {alpha_val}, Beta: {beta_val}")
             print(res_df)
             if test_method == "loo":
-                average_score = res_df[res_df["Target"] == "Average"]["Accuracy"].values[0]
+                average_score = res_df[res_df["Target"] == "Average"][
+                    "Accuracy"
+                ].values[0]
             elif test_method == "k_folds":
-                average_score = res_df[res_df["Fold"] == "Average"]["Accuracy"].values[0]
+                average_score = res_df[res_df["Fold"] == "Average"]["Accuracy"].values[
+                    0
+                ]
             elif test_method == "n_k_folds":
-                average_score = res_df[res_df["fold"] == "average"]["accuracy"].values[0]
+                average_score = res_df[res_df["fold"] == "average"]["accuracy"].values[
+                    0
+                ]
             results_dict["alpha"].append(alpha_val)
             results_dict["beta"].append(beta_val)
             results_dict["gamma"].append(gamma_val)
@@ -301,13 +324,22 @@ for alpha_val in alpha_range:
                 best.accuracy = average_score
             print(best)
 
-    results_df = pd.DataFrame(results_dict)
-    # results in the form "results/{k_folds/loo}_{regression method}_{test num}_{OPTIONAL quality checked}_{sites}"
-    if cfg.MODEL.VECTORIZE:
-        vectorized_string = "vectorized"
-    else:
-        vectorized_string = "tensor"
-    results_df.to_csv(f"{cfg.OUTPUT.RESULTS_DIR}/{test_method}_{estimator_name}_{vectorized_string}{cfg.MODEL.TESTCODE}.csv")
+# saving results can be a separate method
+results_df = pd.DataFrame(results_dict)
+
+# results in the form "results/{k_folds/loo}_{regression method}_{test num}_{OPTIONAL quality checked}_{sites}"
+if cfg.MODEL.VECTORIZE:
+    vectorized_string = "vectorized"
+else:
+    vectorized_string = "tensor"
+
+if not os.path.exists(cfg.OUTPUT.RESULTS_DIR):
+    os.mkdir(cfg.OUTPUT.RESULTS_DIR)
+
+results_df.to_csv(
+    f"{cfg.OUTPUT.RESULTS_DIR}/{estimator_name}-{datetime.now().isoformat()}.csv"
+)
+
 print("Finished.")
 time_taken = time.time() - start_time
 print(f"Time taken: {time_taken // 60}m {time_taken % 60}s")
@@ -316,4 +348,4 @@ print(f"Time taken: {time_taken // 60}m {time_taken % 60}s")
 # need to try on bigger datasets
 
 # need to try on single site data too to see how remurs performs against other methods on that...
-# would likely show whether the issue is the cross domain adaptation# 
+# would likely show whether the issue is the cross domain adaptation#
