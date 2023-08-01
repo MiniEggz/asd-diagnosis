@@ -14,6 +14,16 @@ from config import get_cfg_defaults
 from results_handling import Best
 from datetime import datetime
 
+from cross_validation import leave_one_out, k_folds
+from pipeline_utils import save_results, set_target_key
+
+# baseline with ridge classifier
+from sklearn.linear_model import LogisticRegression, RidgeClassifier
+from sklearn.svm import SVC
+
+from elastic_remurs import ElasticRemursClassifier
+from remurs import RemursClassifier
+
 # config
 # cfg_path = "configs/tutorial.yaml"  # Path to `.yaml` config file
 
@@ -78,135 +88,12 @@ else:
     raise ValueError(
         "Connectivity measure config option invalid. Please use 'correlation' or 'tp'."
     )
+
 # correlation_measure = ConnectivityMeasure(kind="correlation", vectorize=cfg.MODEL.VECTORIZE)
 brain_networks = conn_measure.fit_transform(time_series)
 
 print(f"Number of samples: {brain_networks.shape[0]}")
 print(f"Shape of brain networks: {brain_networks.shape}")
-
-
-# cross validation pipeline for multi-site data
-def cross_validation(x, y, covariates, estimator, domain_adaptation=False):
-    results = {"Target": [], "Num_samples": [], "Accuracy": []}
-    unique_covariates = np.unique(covariates)
-    n_covariates = len(unique_covariates)
-    enc = OneHotEncoder(handle_unknown="ignore")
-    covariate_mat = enc.fit_transform(covariates.reshape(-1, 1)).toarray()
-
-    for tgt in unique_covariates:
-        idx_tgt = np.where(covariates == tgt)
-        idx_src = np.where(covariates != tgt)
-        x_tgt = brain_networks[idx_tgt]
-        x_src = brain_networks[idx_src]
-        y_tgt = y[idx_tgt]
-        y_src = y[idx_src]
-
-        if domain_adaptation:
-            estimator.fit(
-                np.concatenate((x_src, x_tgt)),
-                y_src,
-                np.concatenate((covariate_mat[idx_src], covariate_mat[idx_tgt])),
-            )
-        else:
-            estimator.fit(x_src, y_src)
-
-        y_pred = estimator.predict(x_tgt)
-        results["Accuracy"].append(accuracy_score(y_tgt, y_pred))
-        results["Target"].append(tgt)
-        results["Num_samples"].append(x_tgt.shape[0])
-
-    mean_acc = sum(
-        [
-            results["Num_samples"][i] * results["Accuracy"][i]
-            for i in range(n_covariates)
-        ]
-    )
-    mean_acc /= x.shape[0]
-
-    # calculate squared differences for std
-    squared_diffs = [
-        results["Num_samples"][i] * (results["Accuracy"][i] - mean_acc) ** 2
-        for i in range(n_covariates)
-    ]
-
-    variance = sum(squared_diffs) / x.shape[0]
-    std = np.sqrt(variance)
-
-    # append to results table
-    results["Target"].append("Average")
-    results["Num_samples"].append(x.shape[0])
-    results["Accuracy"].append(mean_acc)
-
-    results["Target"].append("Std")
-    results["Num_samples"].append(x.shape[0])
-    results["Accuracy"].append(std)
-
-    return pd.DataFrame(results)
-
-
-# cross validation pipeline for multi-site data
-def k_fold_cross_validation(x, y, covariates, estimator, k=10):
-    num_samples = len(covariates)
-    idx_total = range(num_samples)
-
-    results = {"Fold": [], "Num_samples": [], "Accuracy": []}
-
-    num_test = int(len(idx_total) / k)
-
-    for test_fold in range(k):
-        start_idx_test = test_fold * num_test
-        end_idx_test = (test_fold + 1) * num_test
-        if test_fold == k - 1:
-            end_idx_test = num_samples
-        idx_test = idx_total[start_idx_test:end_idx_test]
-        idx_train = np.setdiff1d(idx_total, idx_test)
-        x_test = brain_networks[idx_test]
-        x_train = brain_networks[idx_train]
-        y_test = y[idx_test]
-        y_train = y[idx_train]
-
-        estimator.fit(x_train, y_train)
-
-        y_pred = estimator.predict(x_test)
-        results["Accuracy"].append(accuracy_score(y_test, y_pred))
-        results["Fold"].append(test_fold)
-        results["Num_samples"].append(x_test.shape[0])
-
-    # TODO: handle if the folds don't match... do a final fold with remaining, or validate number of folds
-
-    mean_acc = sum(
-        [results["Num_samples"][i] * results["Accuracy"][i] for i in range(k)]
-    )
-    mean_acc /= x.shape[0]
-
-    # calculate squared differences
-    squared_diffs = [
-        results["Num_samples"][i] * (results["Accuracy"][i] - mean_acc) ** 2
-        for i in range(k)
-    ]
-
-    variance = sum(squared_diffs) / x.shape[0]
-    std = np.sqrt(variance)
-
-    # add avg accuracy
-    results["Fold"].append("Average")
-    results["Num_samples"].append(x.shape[0])
-    results["Accuracy"].append(mean_acc)
-
-    # add std
-    results["Fold"].append("Std")
-    results["Num_samples"].append(x.shape[0])
-    results["Accuracy"].append(std)
-
-    return pd.DataFrame(results)
-
-
-# baseline with ridge classifier
-from sklearn.linear_model import LogisticRegression, RidgeClassifier
-from sklearn.svm import SVC
-
-from elastic_remurs import ElasticRemursClassifier
-from remurs import RemursClassifier
 
 print("Running cross-validation...")
 start_time = time.time()
@@ -242,7 +129,8 @@ if estimator_name not in GAMMA_NEEDED:
 
 if estimator_name == "mpca":
     alpha_range = [""]
-
+    
+target_key = set_target_key(test_method)
 
 # running the experiment can also be pulled out into a separate function
 for alpha_val in alpha_range:
@@ -250,9 +138,10 @@ for alpha_val in alpha_range:
         for gamma_val in gamma_range:
             print(f"Alpha: {alpha_val}, Beta: {beta_val}, Gamma: {gamma_val}")
 
+            # init estimator
             if estimator_name == "remurs":
                 estimator = RemursClassifier(
-                    alpha=alpha_val, beta=beta_val, fit_intercept=True
+                    alpha=alpha_val, beta=beta_val
                 )
             elif estimator_name == "elastic_remurs":
                 estimator = ElasticRemursClassifier(
@@ -278,41 +167,29 @@ for alpha_val in alpha_range:
                     solver="saga",
                     max_iter=1000,
                 )
-            # estimator = Lasso(alpha=alpha_val)
-            # estimator = LogisticRegression(penalty="l2", C=alpha_val, solver="saga", max_iter=1000)
 
-            # can make validation method more abstract
+            # run cross validaiton
             if test_method == "k_folds":
-                res_df = k_fold_cross_validation(
+                res_df = k_folds(
                     brain_networks,
                     pheno["DX_GROUP"].values,
                     pheno["SITE_ID"].values,
                     estimator,
                 )
             elif test_method == "loo":
-                res_df = cross_validation(
+                res_df = leave_one_out(
                     brain_networks,
                     pheno["DX_GROUP"].values,
                     pheno["SITE_ID"].values,
                     estimator,
                 )
 
-            # displaying can be separate function
             print("Displaying findings...")
-            print(f"Alpha: {alpha_val}, Beta: {beta_val}")
+            print(f"Alpha: {alpha_val}, Beta: {beta_val}, Gamma: {gamma_val}")
             print(res_df)
-            if test_method == "loo":
-                average_score = res_df[res_df["Target"] == "Average"][
-                    "Accuracy"
-                ].values[0]
-            elif test_method == "k_folds":
-                average_score = res_df[res_df["Fold"] == "Average"]["Accuracy"].values[
-                    0
-                ]
-            elif test_method == "n_k_folds":
-                average_score = res_df[res_df["fold"] == "average"]["accuracy"].values[
-                    0
-                ]
+
+            average_score = res_df[res_df[target_key] == "Average"] ["Accuracy"].values[0]
+
             results_dict["alpha"].append(alpha_val)
             results_dict["beta"].append(beta_val)
             results_dict["gamma"].append(gamma_val)
@@ -327,18 +204,7 @@ for alpha_val in alpha_range:
 # saving results can be a separate method
 results_df = pd.DataFrame(results_dict)
 
-# results in the form "results/{k_folds/loo}_{regression method}_{test num}_{OPTIONAL quality checked}_{sites}"
-if cfg.MODEL.VECTORIZE:
-    vectorized_string = "vectorized"
-else:
-    vectorized_string = "tensor"
-
-if not os.path.exists(cfg.OUTPUT.RESULTS_DIR):
-    os.mkdir(cfg.OUTPUT.RESULTS_DIR)
-
-results_df.to_csv(
-    f"{cfg.OUTPUT.RESULTS_DIR}/{estimator_name}-{datetime.now().isoformat()}.csv"
-)
+save_results(results_df, estimator_name, cfg.OUTPUT.RESULTS_DIR)
 
 print("Finished.")
 time_taken = time.time() - start_time
