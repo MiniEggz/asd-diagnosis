@@ -137,38 +137,37 @@ class RemursClassifier:
         self.tol = tol
         self.class_weight = None
         self.coef_ = None
-        self.binarizer = LabelBinarizer()
+        self.binarizer = LabelBinarizer(pos_label=1, neg_label=-1)
 
     def fit(self, X, y):
         # preprocess
-        X, _, X_offset, _ = _center_data(X, y, self.fit_intercept)
         Y = self.binarizer.fit_transform(y.reshape(-1, 1))
+        X, Y, X_offset, Y_offset = _center_data(X, Y, self.fit_intercept)
 
         # flatten coef for ease of prediction calculation
         self.coef_ = _remurs_regression(
             X, Y, self.alpha, self.beta, self.tol, self.max_iter
         ).flatten()
-        self.X_offset_ = X_offset.flatten()
 
         if self.fit_intercept:
-            self.intercept_ = np.mean(Y) - np.dot(self.X_offset_, self.coef_)
+            self.intercept_ = np.mean(Y) - np.dot(X_offset.flatten(), self.coef_)
         else:
             self.intercept_ = 0.0
 
         return self
 
-    def predict_cont(self, X):
+    def decision_function(self, X):
         self.check_is_fitted()
         # flatten each sample in X for ease of calculation
         flat_X = X.reshape(X.shape[0], -1)
         return np.dot(flat_X, self.coef_) + self.intercept_
 
     def predict(self, X, certainty=False):
-        cont = self.predict_cont(X)
-        preds = self.binarizer.inverse_transform(cont > 0.5)
+        scores = self.decision_function(X)
+        labels = self.binarizer.inverse_transform(scores > 0)
         if certainty:
-            return zip(preds, cont)
-        return preds
+            return zip(labels, scores)
+        return labels
 
     def check_is_fitted(self):
         if self.coef_ is None:
