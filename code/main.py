@@ -148,7 +148,7 @@ for alpha_val in alpha_range:
             # init estimator
             if estimator_name == "remurs":
                 estimator = RemursClassifier(
-                    alpha=alpha_val, beta=beta_val, flatten_input=True
+                    alpha=alpha_val, beta=beta_val
                 )
             elif estimator_name == "elastic_remurs":
                 estimator = ElasticRemursClassifier(
