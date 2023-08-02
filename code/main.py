@@ -1,30 +1,36 @@
 import os
+import sys
 import time
+from datetime import datetime
 
 import numpy as np
 import pandas as pd
+from config import get_cfg_defaults
+from cross_validation import k_folds, leave_one_out
+from elastic_remurs import ElasticRemursClassifier
 from nilearn.connectome import ConnectivityMeasure
 from nilearn.datasets import fetch_abide_pcp
-
-from config import get_cfg_defaults
-from results_handling import Best
-from datetime import datetime
-
-from cross_validation import leave_one_out, k_folds
+from old_remurs import OldRemursClassifier
 from pipeline_utils import save_results, set_target_key
+from remurs import RemursClassifier
+from results_handling import Best
 
 # baseline with ridge classifier
 from sklearn.linear_model import LogisticRegression, RidgeClassifier
 from sklearn.svm import SVC
 
-from elastic_remurs import ElasticRemursClassifier
-from remurs import RemursClassifier
-
-# config
-# cfg_path = "configs/tutorial.yaml"  # Path to `.yaml` config file
+VALID_ESTIMATOR_NAMES = [
+    "remurs",
+    "old_remurs",
+    "elastic_remurs",
+    "ridge",
+    "svm",
+    "logistic_l1",
+    "logistic_l2",
+    "logistic_elastic",
+]
 
 cfg = get_cfg_defaults()
-# cfg.merge_from_file(cfg_path)
 cfg.freeze()
 print("CONFIG:")
 print(cfg)
@@ -97,6 +103,11 @@ alpha_range = cfg.MODEL.ALPHA_RANGE
 beta_range = cfg.MODEL.BETA_RANGE
 gamma_range = cfg.MODEL.GAMMA_RANGE
 estimator_name = cfg.MODEL.ESTIMATOR
+# if estimator passed as arg
+if len(sys.argv) == 2:
+    if sys.argv[1] in VALID_ESTIMATOR_NAMES:
+        estimator_name = sys.argv[1]
+print(f"Estimator: {estimator_name}")
 test_method = cfg.MODEL.TEST_METHOD
 
 if test_method == "loo":
@@ -125,7 +136,7 @@ if estimator_name not in GAMMA_NEEDED:
 
 if estimator_name == "mpca":
     alpha_range = [""]
-    
+
 target_key = set_target_key(test_method)
 
 # running the experiment can also be pulled out into a separate function
@@ -137,12 +148,14 @@ for alpha_val in alpha_range:
             # init estimator
             if estimator_name == "remurs":
                 estimator = RemursClassifier(
-                    alpha=alpha_val, beta=beta_val
+                    alpha=alpha_val, beta=beta_val, flatten_input=True
                 )
             elif estimator_name == "elastic_remurs":
                 estimator = ElasticRemursClassifier(
                     alpha=alpha_val, beta=beta_val, gamma=gamma_val
                 )
+            elif estimator_name == "old_remurs":
+                estimator = OldRemursClassifier(alpha=alpha_val, beta=beta_val)
             elif estimator_name == "ridge":
                 estimator = RidgeClassifier(alpha=alpha_val)
             elif estimator_name == "svm":
@@ -163,6 +176,8 @@ for alpha_val in alpha_range:
                     solver="saga",
                     max_iter=1000,
                 )
+            else:
+                raise ValueError(f"{estimator_name} is an invalid estimator.")
 
             # run cross validaiton
             if test_method == "k_folds":
@@ -179,12 +194,16 @@ for alpha_val in alpha_range:
                     pheno["SITE_ID"].values,
                     estimator,
                 )
+            else:
+                raise ValueError(f"{test_method} is an invalid test method.")
 
             print("Displaying findings...")
             print(f"Alpha: {alpha_val}, Beta: {beta_val}, Gamma: {gamma_val}")
             print(res_df)
 
-            average_score = res_df[res_df[target_key] == "Average"] ["Accuracy"].values[0]
+            average_score = res_df[res_df[target_key] == "Average"]["Accuracy"].values[
+                0
+            ]
 
             results_dict["alpha"].append(alpha_val)
             results_dict["beta"].append(beta_val)

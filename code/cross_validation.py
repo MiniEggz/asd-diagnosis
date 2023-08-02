@@ -1,8 +1,8 @@
 import numpy as np
 import pandas as pd
-
 from sklearn.metrics import accuracy_score
 from sklearn.preprocessing import OneHotEncoder
+
 
 # cross validation pipeline for multi-site data
 def leave_one_out(x, y, covariates, estimator):
@@ -68,6 +68,7 @@ def leave_one_out(x, y, covariates, estimator):
     results["Accuracy"].append(std)
 
     return pd.DataFrame(results)
+
 
 # cross validation pipeline for multi-site data
 def k_folds(x, y, covariates, estimator, k=10):

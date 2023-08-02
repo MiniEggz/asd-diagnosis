@@ -8,6 +8,10 @@ Classifier
    - Added as extra parameters in the model?
    - Look at how kunda and zhou did it
 
+ - Diff between old implementation and new
+  - New one gives tensor input, old gave vector
+  - In some instances, vector input performed better
+
 Certainty
  - Use distance from center to determine certainty
  - Certainty can then be evaluated

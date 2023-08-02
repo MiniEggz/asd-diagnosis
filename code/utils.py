@@ -44,6 +44,7 @@ def prox_l1(v, lambda_):
     """
     return np.maximum(0, v - lambda_) - np.maximum(0, -v - lambda_)
 
+
 def shrinkage_penalty(v, lambda_):
     """Shrinkage penalty, somewhat simulating prox l2 norm.
 
@@ -59,6 +60,7 @@ def prox_nuclear(v, lambda_):
     U, S, V = np.linalg.svd(v, full_matrices=False)
     S = np.diag(S)
     return U @ np.diag(prox_l1(np.diag(S), lambda_)) @ V
+
 
 def center_data(
     X,

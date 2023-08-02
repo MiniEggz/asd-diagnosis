@@ -1,12 +1,15 @@
-import pandas as pd
 import os
 from datetime import datetime
 
+import pandas as pd
+
+
 def set_target_key(test_method):
     if test_method == "loo":
-        return "Target" 
+        return "Target"
     else:
         return "Fold"
+
 
 def save_results(results_df, estimator_name, results_dir):
     """Save results to csv file."""

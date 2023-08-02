@@ -1,6 +1,6 @@
 import numpy as np
-from sklearn.preprocessing import LabelBinarizer
 import utils
+from sklearn.preprocessing import LabelBinarizer
 
 
 def _elastic_remurs_regression(
@@ -77,7 +77,9 @@ def _elastic_remurs_regression(
             tSum_uv += tV[n]
             tSum_ab += tB[n]
 
-        tW = utils.prox_l1((tSum_uv + tSum_ab) / (N + 1), beta / (N + 1) / rho) + utils.shrinkage_penalty(
+        tW = utils.prox_l1(
+            (tSum_uv + tSum_ab) / (N + 1), beta / (N + 1) / rho
+        ) + utils.shrinkage_penalty(
             (tSum_uv + tSum_ab) / (N + 1), gamma / (N + 1) / rho
         )
 
@@ -99,9 +101,16 @@ def _elastic_remurs_regression(
 
     return tW
 
+
 class ElasticRemursClassifier:
     def __init__(
-        self, alpha=1.0, beta=1.0, gamma=1.0, fit_intercept=True, max_iter=1000, tol=1e-4
+        self,
+        alpha=1.0,
+        beta=1.0,
+        gamma=1.0,
+        fit_intercept=True,
+        max_iter=1000,
+        tol=1e-4,
     ):
         self.alpha = alpha
         self.beta = beta

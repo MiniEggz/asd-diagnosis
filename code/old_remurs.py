@@ -219,6 +219,8 @@ class _BaseRemurs(LinearModel, metaclass=ABCMeta):
             sample_weight=sample_weight,
         )
 
+        X = X.reshape((-1, 200, 200))
+
         self.coef_ = _remurs_regression(
             X,
             y,
@@ -226,7 +228,7 @@ class _BaseRemurs(LinearModel, metaclass=ABCMeta):
             beta=self.beta,
             epsilon=self.tol,
             max_iter=self.max_iter,
-        )
+        ).flatten()
 
         self._set_intercept(X_offset, y_offset, X_scale)
 
@@ -398,7 +400,7 @@ class _RemursClassifierMixin(LinearClassifierMixin):
         return {"multilabel": True}
 
 
-class RemursClassifier(_RemursClassifierMixin, _BaseRemurs):
+class OldRemursClassifier(_RemursClassifierMixin, _BaseRemurs):
     def __init__(
         self,
         alpha=1.0,

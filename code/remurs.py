@@ -1,7 +1,6 @@
 import numpy as np
-from sklearn.preprocessing import LabelBinarizer
-
 import utils
+from sklearn.preprocessing import LabelBinarizer
 
 
 def _center_data(
@@ -39,9 +38,11 @@ def _remurs_regression(
     beta: float,
     epsilon: float = 1e-4,
     max_iter: int = 1000,
+    flatten_input: bool = False,
 ):
-    # modify to make work
-    # TODO: find a better general solution
+    # used in old implementation
+    if flatten_input:
+        tX = tX.reshape((y.shape[0], -1))
 
     if y.shape[0] != tX.shape[-1]:
         tX = tX.T
@@ -128,13 +129,20 @@ def _remurs_regression(
 
 class RemursClassifier:
     def __init__(
-        self, alpha=1.0, beta=1.0, fit_intercept=True, max_iter=1000, tol=1e-4
+        self,
+        alpha=1.0,
+        beta=1.0,
+        fit_intercept=True,
+        max_iter=1000,
+        tol=1e-4,
+        flatten_input=False,
     ):
         self.alpha = alpha
         self.beta = beta
         self.fit_intercept = fit_intercept
         self.max_iter = max_iter
         self.tol = tol
+        self.flatten_input = flatten_input
         self.class_weight = None
         self.coef_ = None
         self.binarizer = LabelBinarizer(pos_label=1, neg_label=-1)
@@ -142,11 +150,17 @@ class RemursClassifier:
     def fit(self, X, y):
         # preprocess
         Y = self.binarizer.fit_transform(y.reshape(-1, 1))
-        X, Y, X_offset, Y_offset = _center_data(X, Y, self.fit_intercept)
+        X, y, X_offset, Y_offset = _center_data(X, Y, self.fit_intercept)
 
         # flatten coef for ease of prediction calculation
         self.coef_ = _remurs_regression(
-            X, Y, self.alpha, self.beta, self.tol, self.max_iter
+            X,
+            y,
+            alpha=self.alpha,
+            beta=self.beta,
+            epsilon=self.tol,
+            max_iter=self.max_iter,
+            flatten_input=self.flatten_input,
         ).flatten()
 
         if self.fit_intercept:
