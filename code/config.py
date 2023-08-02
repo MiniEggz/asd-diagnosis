@@ -73,8 +73,8 @@ _C.MODEL.RATIO = [
     0.75,
     1.0,
 ]
-_C.MODEL.ESTIMATOR = "ridge"  # {"remurs", "elastic_remurs", "ridge", "svm", "logistic_l1", "logistic_l2", "logistic_elastic"}
-_C.MODEL.VECTORIZE = True
+_C.MODEL.ESTIMATOR = "remurs"  # {"remurs", "elastic_remurs", "ridge", "svm", "logistic_l1", "logistic_l2", "logistic_elastic"}
+_C.MODEL.VECTORIZE = False
 _C.MODEL.CONNECTIVITY = "correlation"
 _C.MODEL.TEST_METHOD = "loo"
 _C.MODEL.TESTCODE = ""

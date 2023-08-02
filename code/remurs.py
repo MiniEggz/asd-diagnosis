@@ -150,7 +150,7 @@ class RemursClassifier:
         ).flatten()
 
         if self.fit_intercept:
-            self.intercept_ = np.mean(Y) - np.dot(X_offset.flatten(), self.coef_)
+            self.intercept_ = Y_offset - np.dot(X_offset.flatten(), self.coef_)
         else:
             self.intercept_ = 0.0
 

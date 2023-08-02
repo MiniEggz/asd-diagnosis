@@ -1,14 +1,10 @@
 import os
-import sys
 import time
 
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from nilearn.connectome import ConnectivityMeasure
 from nilearn.datasets import fetch_abide_pcp
-from sklearn.metrics import accuracy_score
-from sklearn.preprocessing import OneHotEncoder
 
 from config import get_cfg_defaults
 from results_handling import Best

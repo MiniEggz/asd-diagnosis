@@ -1,0 +1,13 @@
+Classifier
+ - Shouldn't need intercept
+ - Try implementing intercept anyway
+ - Phenotypic data
+  - Try adding as a separate scaled term
+  - How scale determined?
+   - Hyperparameter? - kind of elastic net with brain and pheno?
+   - Added as extra parameters in the model?
+   - Look at how kunda and zhou did it
+
+Certainty
+ - Use distance from center to determine certainty
+ - Certainty can then be evaluated
