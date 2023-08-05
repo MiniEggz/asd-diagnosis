@@ -1,8 +1,36 @@
+"""
+This module provides a collection of mathematical and data manipulation
+functions, useful in multilinear algebra and machine learning preprocessing.
+
+Functions:
+    shift: Changes the axes of the array.
+    fold: Collapses all but one of the dimensions of an array to perform
+          operations on the data.
+    unfold: Reverts the array back to its original shape after performing
+            operations using fold.
+    factor: Performs Cholesky decomposition on the input matrix.
+    prox_l1: Evaluates the proximal operator of the l1 norm.
+    shrinkage_penalty: Applies shrinkage penalty on an array.
+    prox_nuclear: Evaluates the proximal operator of the nuclear norm (i.e.,
+                  the singular value thresholding operator).
+    center_data: Preprocesses the data by centering it around the mean.
+"""
+
 import numpy as np
 import scipy.sparse as sparse
 
 
 def shift(X: np.ndarray, n: int, shift_right: bool = True):
+    """Changes the axes of the array.
+
+    Args:
+        X (np.ndarray): Input array.
+        n (int): Number of positions to shift.
+        shift_right (bool, optional): Direction of shift. True for right, False for left. Defaults to True.
+
+    Returns:
+        np.ndarray: Array after shifting axes.
+    """
     dims = X.ndim
     if not shift_right:
         n = dims - n
@@ -12,20 +40,53 @@ def shift(X: np.ndarray, n: int, shift_right: bool = True):
 
 
 # helper functions
-def fold(X, dim, i):
+def fold(X: np.ndarray, dim: tuple, i: int):
+    """
+    Collapses all but one of the dimensions of an array to perform operations
+    on the data.
+
+    Args:
+        X (np.ndarray): The input tensor.
+        dim (list/tuple): Dimensions to be preserved.
+        i (int): Index of dimension to be preserved.
+
+    Returns:
+        np.ndarray: Folded array with one dimension preserved.
+    """
     dim = np.roll(dim, 1 - i)
     X = np.reshape(X, dim)
     X = shift(X, i - 1)
     return X
 
 
-def unfold(X, dim, i):
+def unfold(X: np.ndarray, dim: tuple, i: int):
+    """Reverts the array back to its original shape after performing operations
+    using fold.
+
+    Args:
+        X (np.ndarray): The folded array.
+        dim (list/tuple): The original dimensions of the array.
+        i (int): Index of dimension to be preserved during fold.
+
+    Returns:
+        np.ndarray: Unfolded array in its original shape.
+    """
     X = shift(X, i - 1, shift_right=False)
     X = X.reshape(((dim[(i - 1) % len(dim)]), -1))
     return X
 
 
-def factor(A, rho):
+def factor(A: np.ndarray, rho: float):
+    """Performs Cholesky decomposition on the input matrix.
+
+    Args:
+        A (np.ndarray): The input matrix for decomposition.
+        rho (float): A regularization parameter.
+
+    Returns:
+        tuple: The lower triangular matrix and the upper triangular matrix
+               obtained from Cholesky decomposition.
+    """
     m, n = A.shape
     if m >= n:  # if skinny
         L = np.linalg.cholesky(A.T @ A + rho * sparse.eye(n))
@@ -68,7 +129,7 @@ def center_data(
     fit_intercept,
     copy=True,
 ):
-    """Center data."""
+    """Center data. Based on scikit-learn _preprocess_data."""
     if copy:
         X = X.copy(order="K")
 

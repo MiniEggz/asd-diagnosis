@@ -3,27 +3,14 @@ from dataclasses import dataclass
 
 @dataclass
 class Best:
+    """A class used to represent the best result of an evaluation.
+
+    Attributes:
+        accuracy (float): Best accuracy achieved.
+        alpha (float): Alpha value associated with the best accuracy.
+        beta (float): Beta value associated with the best accuracy.
+    """
     accuracy: float = 0
     alpha: float = 0
     beta: float = 0
 
-
-@dataclass
-class Result:
-    avg_accuracy: float = 0
-    alpha: float = 0
-    beta: float = 0
-
-
-class Results:
-    def __init__(self):
-        self.results = list()
-
-    def save(self):
-        pass
-
-    def load(self):
-        pass
-
-    def top_x(self, x=3):
-        pass

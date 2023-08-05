@@ -1,3 +1,4 @@
+"""Pipeline for testing classification model performance on ABIDE dataset"""
 import os
 import sys
 import time
@@ -147,9 +148,7 @@ for alpha_val in alpha_range:
 
             # init estimator
             if estimator_name == "remurs":
-                estimator = RemursClassifier(
-                    alpha=alpha_val, beta=beta_val
-                )
+                estimator = RemursClassifier(alpha=alpha_val, beta=beta_val)
             elif estimator_name == "elastic_remurs":
                 estimator = ElasticRemursClassifier(
                     alpha=alpha_val, beta=beta_val, gamma=gamma_val
@@ -225,8 +224,3 @@ print("Finished.")
 time_taken = time.time() - start_time
 print(f"Time taken: {time_taken // 60}m {time_taken % 60}s")
 
-# want to try more alphas around the 100 mark, lower beta values
-# need to try on bigger datasets
-
-# need to try on single site data too to see how remurs performs against other methods on that...
-# would likely show whether the issue is the cross domain adaptation#

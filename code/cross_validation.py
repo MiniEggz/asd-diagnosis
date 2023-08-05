@@ -1,3 +1,26 @@
+"""
+This module contains two methods for cross-validation, namely `leave_one_out`
+and `k_folds`. 
+
+- The `leave_one_out` method performs a leave one out cross validation strategy
+for multi-site data. 
+- It fits an estimator on data from all but one site, and tests the estimator on
+data from the left out site. 
+- This is repeated for each site. The results are then compiled into a pandas
+DataFrame.
+
+- The `k_folds` method performs a k-fold cross validation strategy for multi-site data.
+- In this method, the data is divided into k subsets (or "folds"), and the model
+is trained on k-1 subsets 
+and tested on the left out subset. This process is repeated k times, each time
+with a different subset left out for testing. 
+- The results are also compiled into a pandas DataFrame.
+
+Both methods use the accuracy score as a measure of model performance, and
+return a pandas DataFrame with
+the accuracy score for each test set, along with the mean accuracy score and
+its standard deviation.
+"""
 import numpy as np
 import pandas as pd
 from sklearn.metrics import accuracy_score

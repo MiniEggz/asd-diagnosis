@@ -1,37 +1,21 @@
+"""
+This module provides functionality to train a multilinear classifier using the 
+Regularized Multilinear Regression and Selection (Remurs) method.
+
+Classes:
+    RemursClassifier: Multilinear classifier using Remurs method.
+
+Functions:
+    center_data: Preprocesses data by centering it.
+    remurs_regression: Regularized multilinear regression and selection algorithm implementation.
+"""
+
 import numpy as np
 import utils
 from sklearn.preprocessing import LabelBinarizer
 
 
-def _center_data(
-    X,
-    y,
-    fit_intercept,
-    copy=True,
-):
-    """Center data."""
-    if copy:
-        X = X.copy(order="K")
-
-    y = np.asarray(y, dtype=X.dtype)
-
-    if fit_intercept:
-        X_offset = np.average(X, axis=0)
-        X_offset = X_offset.astype(X.dtype, copy=False)
-        X -= X_offset
-        y_offset = np.average(y, axis=0)
-        y = y - y_offset
-    else:
-        X_offset = np.zeros(X.shape[1], dtype=X.dtype)
-        if y.ndim == 1:
-            y_offset = X.dtype.type(0)
-        else:
-            y_offset = np.zeros(y.shape[1], dtype=X.dtype)
-
-    return X, y, X_offset, y_offset
-
-
-def _remurs_regression(
+def remurs_regression(
     tX: np.ndarray,
     y: np.ndarray,
     alpha: float,
@@ -40,6 +24,7 @@ def _remurs_regression(
     max_iter: int = 1000,
     flatten_input: bool = False,
 ):
+    """Regularized multilinear regression and selection."""
     # used in old implementation
     if flatten_input:
         tX = tX.reshape((y.shape[0], -1))
@@ -137,6 +122,7 @@ class RemursClassifier:
         tol=1e-4,
         flatten_input=False,
     ):
+        """Multilinear classifier using Remurs method."""
         self.alpha = alpha
         self.beta = beta
         self.fit_intercept = fit_intercept
@@ -148,12 +134,13 @@ class RemursClassifier:
         self.binarizer = LabelBinarizer(pos_label=1, neg_label=-1)
 
     def fit(self, X, y):
+        """Fit the model given training data X labels."""
         # preprocess
         Y = self.binarizer.fit_transform(y.reshape(-1, 1))
-        X, y, X_offset, Y_offset = _center_data(X, Y, self.fit_intercept)
+        X, y, X_offset, Y_offset = center_data(X, Y, self.fit_intercept)
 
         # flatten coef for ease of prediction calculation
-        self.coef_ = _remurs_regression(
+        self.coef_ = remurs_regression(
             X,
             y,
             alpha=self.alpha,
@@ -171,12 +158,14 @@ class RemursClassifier:
         return self
 
     def decision_function(self, X):
+        """Decide where the point lies on the fit."""
         self.check_is_fitted()
         # flatten each sample in X for ease of calculation
         flat_X = X.reshape(X.shape[0], -1)
         return np.dot(flat_X, self.coef_) + self.intercept_
 
     def predict(self, X, certainty=False):
+        """Predict labels for inputs. Optionally return certainty values."""
         scores = self.decision_function(X)
         labels = self.binarizer.inverse_transform(scores > 0)
         if certainty:
@@ -184,6 +173,7 @@ class RemursClassifier:
         return labels
 
     def check_is_fitted(self):
+        """Check that the model has been fitted."""
         if self.coef_ is None:
             raise ValueError(
                 "This instance is not fitted yet. Call 'fit' with appropriate arguments before using this method."
