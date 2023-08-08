@@ -10,7 +10,8 @@ class Best:
         alpha (float): Alpha value associated with the best accuracy.
         beta (float): Beta value associated with the best accuracy.
     """
+
     accuracy: float = 0
     alpha: float = 0
     beta: float = 0
-
+    gamma: float = 0
