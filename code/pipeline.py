@@ -1,4 +1,7 @@
-"""Pipeline for testing classification model performance on ABIDE dataset"""
+"""Pipeline for testing classification model performance on ABIDE dataset.
+
+Adapted from pipeline used in: https://github.com/pykale/pykale/tree/main/examples/multisite_neuroimg_adapt.
+"""
 import os
 import sys
 import time
@@ -11,7 +14,6 @@ from cross_validation import k_folds, leave_one_out
 from elastic_remurs import ElasticRemursClassifier
 from nilearn.connectome import ConnectivityMeasure
 from nilearn.datasets import fetch_abide_pcp
-from old_remurs import OldRemursClassifier
 from pipeline_utils import save_results, set_target_key
 from remurs import RemursClassifier
 from results_handling import Best
@@ -22,7 +24,6 @@ from sklearn.svm import SVC
 
 VALID_ESTIMATOR_NAMES = [
     "remurs",
-    "old_remurs",
     "elastic_remurs",
     "ridge",
     "svm",
@@ -35,13 +36,23 @@ GAMMA_NEEDED = ["elastic_remurs"]
 
 
 class AbideClassificationPipeline:
-    def __init__(self):
+    def __init__(self, verbose=False):
+        self.verbose = verbose
+
         # load config
+        if self.verbose:
+            print("Loading config.")
         self.cfg = get_cfg_defaults()
         self.cfg.freeze()
 
         # load abide data
+        if self.verbose:
+            print("(Down)Loading ABIDE dataset.")
         self.download_abide()
+
+        # preprocess
+        if self.verbose:
+            print("Carrying out preprocessing steps.")
         pheno_info = self.read_pheno_info()
         self.brain_networks = self.extract_brain_networks(pheno_info)
         self.pheno = pheno_info.loc[self.use_idx, ["SITE_ID", "DX_GROUP"]].reset_index(
@@ -91,7 +102,7 @@ class AbideClassificationPipeline:
         ]
         self.use_idx = [
             i for i, data_path in enumerate(data_files) if os.path.exists(data_path)
-        ]  # You don't seem to be using this, though.
+        ]
 
         if self.cfg.MODEL.CONNECTIVITY not in ["tp", "correlation"]:
             raise ValueError(
@@ -173,7 +184,7 @@ class AbideClassificationPipeline:
 
         target_key = set_target_key(test_method)
 
-        # running the experiment can also be pulled out into a separate function
+        # potentially move to separate function
         for alpha_val in alpha_range:
             for beta_val in beta_range:
                 for gamma_val in gamma_range:
@@ -224,7 +235,6 @@ class AbideClassificationPipeline:
                     if display:
                         print(best)
 
-        # saving results can be a separate method
         self.results_df = pd.DataFrame(results_dict)
         save_results(self.results_df, estimator_name, self.cfg.OUTPUT.RESULTS_DIR)
 

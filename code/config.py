@@ -63,8 +63,6 @@ _C.MODEL.BETA_RANGE = [
     5 * 10**3,
     10**4,
 ]
-# _C.MODEL.ALPHA_RANGE = [1]
-# _C.MODEL.BETA_RANGE = [10**2]
 _C.MODEL.GAMMA_RANGE = [0.1, 1, 100, 1000]
 _C.MODEL.RATIO = [
     0.1,
@@ -73,16 +71,12 @@ _C.MODEL.RATIO = [
     0.75,
     1.0,
 ]
-_C.MODEL.ESTIMATOR = "remurs"  # {"remurs", "elastic_remurs", "ridge", "svm", "logistic_l1", "logistic_l2", "logistic_elastic"}
-_C.MODEL.VECTORIZE = False
+_C.MODEL.ESTIMATOR = "ridge"  # {"remurs", "elastic_remurs", "ridge", "svm", "logistic_l1", "logistic_l2", "logistic_elastic"}
+_C.MODEL.VECTORIZE = True
 _C.MODEL.CONNECTIVITY = "correlation"
 _C.MODEL.TEST_METHOD = "loo"
-_C.MODEL.TESTCODE = ""
 _C.MODEL.NUM_TESTS = 2
 _C.MODEL.NUM_FOLDS = 5
-_C.MODEL.ALPHA = 500.0
-_C.MODEL.BETA = 0.005
-_C.MODEL.LAMBDA_ = 1.0
 # ---------------------------------------------------------------------------- #
 # Misc options
 # ---------------------------------------------------------------------------- #

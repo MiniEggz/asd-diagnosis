@@ -2,6 +2,9 @@
 This module provides functionality to train a multilinear classifier using the 
 Regularized Multilinear Regression and Selection (Remurs) method.
 
+Original MATLAB code: https://uk.mathworks.com/matlabcentral/fileexchange/71204
+Remurs paper: https://ojs.aaai.org/index.php/AAAI/article/view/10871
+
 Classes:
     RemursClassifier: Multilinear classifier using Remurs method.
 
