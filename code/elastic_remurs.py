@@ -1,6 +1,7 @@
 import numpy as np
-import utils
 from sklearn.preprocessing import LabelBinarizer
+
+import utils
 
 
 def _elastic_remurs_regression(

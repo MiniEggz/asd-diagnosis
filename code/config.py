@@ -1,5 +1,5 @@
 """
-Default configurations for classification on resting-state fMRI of ABIDE
+Configs for classification on resting-state fMRI of ABIDE.
 """
 
 from yacs.config import CfgNode as CN
@@ -71,10 +71,12 @@ _C.MODEL.RATIO = [
     0.75,
     1.0,
 ]
-_C.MODEL.ESTIMATOR = "ridge"  # {"remurs", "elastic_remurs", "ridge", "svm", "logistic_l1", "logistic_l2", "logistic_elastic"}
-_C.MODEL.VECTORIZE = True
+_C.MODEL.ESTIMATOR = "remurs"  # {"remurs", "elastic_remurs", "ridge", "svm", "logistic_l1", "logistic_l2", "logistic_elastic"}
+# Vectorize should be set to true for all options other than remurs and elastic remurs
+_C.MODEL.VECTORIZE = False
 _C.MODEL.CONNECTIVITY = "correlation"
-_C.MODEL.TEST_METHOD = "loo"
+_C.MODEL.TEST_METHOD = "loo"  # {"loo", "k_folds"}
+# only apply when TEST_METHOD is "k_folds"
 _C.MODEL.NUM_TESTS = 2
 _C.MODEL.NUM_FOLDS = 5
 # ---------------------------------------------------------------------------- #
@@ -83,7 +85,6 @@ _C.MODEL.NUM_FOLDS = 5
 _C.OUTPUT = CN()
 _C.OUTPUT.ROOT = "./outputs"  # output_dir
 _C.OUTPUT.RESULTS_DIR = "results"  # don't add final /
-# _C.OUTPUT.RESULTS_DIR = "results/quality_checked_all_sites"
 
 
 def get_cfg_defaults():

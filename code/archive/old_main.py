@@ -6,19 +6,20 @@ from datetime import datetime
 
 import numpy as np
 import pandas as pd
-from config import get_cfg_defaults
-from cross_validation import k_folds, leave_one_out
-from elastic_remurs import ElasticRemursClassifier
 from nilearn.connectome import ConnectivityMeasure
 from nilearn.datasets import fetch_abide_pcp
 from old_remurs import OldRemursClassifier
-from pipeline_utils import save_results, set_target_key
-from remurs import RemursClassifier
-from results_handling import Best
 
 # baseline with ridge classifier
 from sklearn.linear_model import LogisticRegression, RidgeClassifier
 from sklearn.svm import SVC
+
+from config import get_cfg_defaults
+from cross_validation import k_folds, leave_one_out
+from elastic_remurs import ElasticRemursClassifier
+from pipeline_utils import save_results, set_target_key
+from remurs import RemursClassifier
+from results_handling import Best
 
 VALID_ESTIMATOR_NAMES = [
     "remurs",

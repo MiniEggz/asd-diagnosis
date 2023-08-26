@@ -14,8 +14,9 @@ Functions:
 """
 
 import numpy as np
-import utils
 from sklearn.preprocessing import LabelBinarizer
+
+import utils
 
 
 def remurs_regression(
