@@ -1,5 +1,5 @@
 """
-This module provides functionality to train a multilinear classifier using the 
+Module providing functionality to train a multilinear classifier using the 
 Regularized Multilinear Regression and Selection (Remurs) method.
 
 Original MATLAB code: https://uk.mathworks.com/matlabcentral/fileexchange/71204
@@ -27,7 +27,20 @@ def remurs_regression(
     max_iter: int = 1000,
     flatten_input: bool = False,
 ):
-    """Regularized multilinear regression and selection."""
+    """Regularized Multilinear Regression and Selection (Remurs) algorithm.
+    
+    Parameters:
+        tX (np.ndarray): Input data tensor.
+        y (np.ndarray): Output vector.
+        alpha (float): Coefficient for the nuclear norm regularization.
+        beta (float): Coefficient for the l1 norm regularization.
+        epsilon (float, optional): Convergence threshold. Defaults to 1e-4.
+        max_iter (int, optional): Maximum number of iterations for the algorithm. Defaults to 1000.
+        flatten_input (bool, optional): Whether to flatten the input data. Defaults to False.
+
+    Returns:
+        np.ndarray: Fitted tensor coefficients.
+    """
     # used in old implementation
     if flatten_input:
         tX = tX.reshape((y.shape[0], -1))
@@ -116,6 +129,18 @@ def remurs_regression(
 
 
 class RemursClassifier:
+"""
+    Multilinear classifier using the Regularized Multilinear Regression and Selection (Remurs) method.
+    
+    Attributes:
+        alpha (float): Coefficient for the nuclear norm regularization.
+        beta (float): Coefficient for the l1 norm regularization.
+        fit_intercept (bool): Whether to calculate the intercept for this model.
+        max_iter (int): Maximum number of iterations for the REMURS algorithm.
+        tol (float): Tolerance for stopping criterion.
+        flatten_input (bool): Whether to flatten the input data.
+        coef_ (np.ndarray or None): Fitted tensor coefficients. None if the model is not yet fitted.
+    """
     def __init__(
         self,
         alpha=1.0,
@@ -125,7 +150,6 @@ class RemursClassifier:
         tol=1e-4,
         flatten_input=False,
     ):
-        """Multilinear classifier using Remurs method."""
         self.alpha = alpha
         self.beta = beta
         self.fit_intercept = fit_intercept
@@ -137,7 +161,15 @@ class RemursClassifier:
         self.binarizer = LabelBinarizer(pos_label=1, neg_label=-1)
 
     def fit(self, X, y):
-        """Fit the model given training data X labels."""
+        """Fit the Remurs model given training data X and labels y.
+        
+        Parameters:
+            X (np.ndarray): Input tensor.
+            y (np.ndarray): Labels.
+
+        Returns:
+            RemursClassifier: Fitted classifier.
+        """
         # preprocess
         Y = self.binarizer.fit_transform(y.reshape(-1, 1))
         X, y, X_offset, Y_offset = utils.center_data(X, Y, self.fit_intercept)
@@ -161,14 +193,29 @@ class RemursClassifier:
         return self
 
     def decision_function(self, X):
-        """Decide where the point lies on the fit."""
+        """Compute the decision function of samples.
+        
+        Parameters:
+            X (np.ndarray): Input tensor.
+
+        Returns:
+            np.ndarray: Decision function values for each sample.
+        """
         self.check_is_fitted()
         # flatten each sample in X for ease of calculation
         flat_X = X.reshape(X.shape[0], -1)
         return np.dot(flat_X, self.coef_) + self.intercept_
 
     def predict(self, X, certainty=False):
-        """Predict labels for inputs. Optionally return certainty values."""
+        """Predict class labels for samples in X.
+        
+        Parameters:
+            X (np.ndarray): Test data.
+            certainty (bool, optional): If True, returns the certainty scores along with predictions.
+
+        Returns:
+            np.ndarray or List[Tuple]: Class labels or tuples of (label, certainty) if `certainty=True`.
+        """
         scores = self.decision_function(X)
         labels = self.binarizer.inverse_transform(scores > 0)
         if certainty:
@@ -176,7 +223,11 @@ class RemursClassifier:
         return labels
 
     def check_is_fitted(self):
-        """Check that the model has been fitted."""
+        """Check whether classifier is fitted.
+        
+        Raises:
+            ValueError: If the model hasn't been fitted yet.
+        """
         if self.coef_ is None:
             raise ValueError(
                 "This instance is not fitted yet. Call 'fit' with appropriate arguments before using this method."
