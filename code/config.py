@@ -18,12 +18,14 @@ _C.DATASET.ROOT = "../data"
 _C.DATASET.PIPELINE = "cpac"  # options: {‘cpac’, ‘css’, ‘dparsf’, ‘niak’}
 _C.DATASET.ATLAS = "rois_cc200"
 # options: {rois_aal, rois_cc200, rois_cc400, rois_dosenbach160, rois_ez, rois_ho, rois_tt}
-_C.DATASET.SITE_IDS = [
-    "NYU",
-    "UM_1",
-    "UCLA_1",
-    "USM",
-]  # list of site ids to use, if None, use all sites
+_C.DATASET.SITE_IDS = None
+# [
+#    "NYU",
+#    "UM_1",
+#    "UCLA_1",
+#    "USM",
+# ]  # list of site ids to use, if None, use all sites
+_C.DATASET.QC = False  # whether the data has been quality checked
 # ---------------------------------------------------------------------------- #
 # Machine learning pipeline
 # ---------------------------------------------------------------------------- #

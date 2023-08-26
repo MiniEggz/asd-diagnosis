@@ -141,7 +141,7 @@ class RemursClassifier:
         """Fit the model given training data X labels."""
         # preprocess
         Y = self.binarizer.fit_transform(y.reshape(-1, 1))
-        X, y, X_offset, Y_offset = center_data(X, Y, self.fit_intercept)
+        X, y, X_offset, Y_offset = utils.center_data(X, Y, self.fit_intercept)
 
         # flatten coef for ease of prediction calculation
         self.coef_ = remurs_regression(

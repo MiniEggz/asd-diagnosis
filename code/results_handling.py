@@ -1,3 +1,4 @@
+"""Helper module used for handling results."""
 from dataclasses import dataclass
 
 
@@ -9,6 +10,7 @@ class Best:
         accuracy (float): Best accuracy achieved.
         alpha (float): Alpha value associated with the best accuracy.
         beta (float): Beta value associated with the best accuracy.
+        gamma (float): Gamma value associated with the best accuracy.
     """
 
     accuracy: float = 0
