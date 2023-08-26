@@ -9,7 +9,6 @@ Classes:
     RemursClassifier: Multilinear classifier using Remurs method.
 
 Functions:
-    center_data: Preprocesses data by centering it.
     remurs_regression: Regularized multilinear regression and selection algorithm implementation.
 """
 
