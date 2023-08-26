@@ -129,7 +129,7 @@ def remurs_regression(
 
 
 class RemursClassifier:
-"""
+    """
     Multilinear classifier using the Regularized Multilinear Regression and Selection (Remurs) method.
     
     Attributes:
