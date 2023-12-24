@@ -95,7 +95,7 @@ def leave_one_out(x, y, covariates, estimator):
 
 # cross validation pipeline for multi-site data
 def k_folds(x, y, covariates, estimator, k=10):
-    """Leave one site out cross validation.
+    """K-folds cross validation.
 
     Params:
         x: data for all sites.

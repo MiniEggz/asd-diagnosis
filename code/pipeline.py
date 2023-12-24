@@ -30,9 +30,7 @@ and call its run method, specifying the desired classifier and other parameters
 in the config.py file.
 """
 import os
-import sys
 import time
-from datetime import datetime
 
 import numpy as np
 import pandas as pd
@@ -217,9 +215,9 @@ class AbideClassificationPipeline:
             Estimator object compliant with core functionalities of sklearn estimators.
         """
         if estimator_name == "remurs":
-            return RemursClassifier(alpha=alpha, beta=beta)
+            return RemursClassifier(alpha=alpha, beta=beta, flatten_input=False)
         elif estimator_name == "elastic_remurs":
-            return ElasticRemursClassifier(alpha=alpha, beta=beta, gamma=gamma)
+            return ElasticRemursClassifier(alpha=alpha, beta=beta, gamma=gamma, flatten_input=False)
         elif estimator_name == "ridge":
             return RidgeClassifier(alpha=alpha)
         elif estimator_name == "svm":
@@ -259,16 +257,14 @@ class AbideClassificationPipeline:
 
         alpha_range = self.cfg.MODEL.ALPHA_RANGE
         beta_range = self.cfg.MODEL.BETA_RANGE
-        gamma_range = self.cfg.MODEL.BETA_RANGE
+        gamma_range = self.cfg.MODEL.GAMMA_RANGE
         if estimator_name is None:
             estimator_name = self.cfg.MODEL.ESTIMATOR
 
+        VALID_TEST_METHODS = ["loo", "k_folds"]
         test_method = self.cfg.MODEL.TEST_METHOD
-        if test_method == "loo":
-            test_nums = ["loo"]
-        elif test_method == "k_folds":
-            test_nums = range(self.cfg.MODEL.NUM_TESTS)
-        else:
+
+        if test_method not in VALID_TEST_METHODS:
             raise ValueError(f"Test method '{test_method}' is invalid.")
 
         # set up for results
@@ -278,7 +274,7 @@ class AbideClassificationPipeline:
         if estimator_name in NO_BETA:
             beta_range = [np.nan]
         elif estimator_name == "logistic_elastic" or estimator_name == "elastic_net":
-            beta_range = cfg.MODEL.RATIO
+            beta_range = self.cfg.MODEL.RATIO
 
         if estimator_name not in GAMMA_NEEDED:
             gamma_range = [np.nan]

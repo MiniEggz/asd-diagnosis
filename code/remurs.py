@@ -28,7 +28,7 @@ def remurs_regression(
     flatten_input: bool = False,
 ):
     """Regularized Multilinear Regression and Selection (Remurs) algorithm.
-    
+
     Parameters:
         tX (np.ndarray): Input data tensor.
         y (np.ndarray): Output vector.
@@ -131,7 +131,7 @@ def remurs_regression(
 class RemursClassifier:
     """
     Multilinear classifier using the Regularized Multilinear Regression and Selection (Remurs) method.
-    
+
     Attributes:
         alpha (float): Coefficient for the nuclear norm regularization.
         beta (float): Coefficient for the l1 norm regularization.
@@ -141,6 +141,7 @@ class RemursClassifier:
         flatten_input (bool): Whether to flatten the input data.
         coef_ (np.ndarray or None): Fitted tensor coefficients. None if the model is not yet fitted.
     """
+
     def __init__(
         self,
         alpha=1.0,
@@ -162,7 +163,7 @@ class RemursClassifier:
 
     def fit(self, X, y):
         """Fit the Remurs model given training data X and labels y.
-        
+
         Parameters:
             X (np.ndarray): Input tensor.
             y (np.ndarray): Labels.
@@ -194,7 +195,7 @@ class RemursClassifier:
 
     def decision_function(self, X):
         """Compute the decision function of samples.
-        
+
         Parameters:
             X (np.ndarray): Input tensor.
 
@@ -208,7 +209,7 @@ class RemursClassifier:
 
     def predict(self, X, certainty=False):
         """Predict class labels for samples in X.
-        
+
         Parameters:
             X (np.ndarray): Test data.
             certainty (bool, optional): If True, returns the certainty scores along with predictions.
@@ -224,7 +225,7 @@ class RemursClassifier:
 
     def check_is_fitted(self):
         """Check whether classifier is fitted.
-        
+
         Raises:
             ValueError: If the model hasn't been fitted yet.
         """
