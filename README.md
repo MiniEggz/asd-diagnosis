@@ -1,6 +1,7 @@
 # ASD Machine Learning Diagnosis
 
 Repository for research into diagnosing ASD (autism spectrum disorder) using machine learning.
+This research has been written into a paper, available in ElasticRemurs.pdf.
 
 Uses many resources from the PyKale library: https://github.com/pykale/pykale.
 
